@@ -9,6 +9,7 @@
 #include <ESPAsyncWebServer.h>
 #include "html-login-page-var.h"
 #include <HTTPClient.h>
+#include "pitches.h"
 
 // Replace with your network credentials
 const char* ssid = "esp32";
@@ -40,14 +41,18 @@ AsyncWebServer server(80);
 // creating http client 
 HTTPClient http;
 String data; // api fetch data
-int ifMediNotTakenTimer = 0; // if medicine not taken then timer will increase
+int mediNotTakenTimer = 600; // if medicine not taken then timer will decrease
 
 
 // functions 
-void checkBoxOpenClose(int pinNumber){
+void checkBoxOpenClose(int pinNumber){ // box opened or not check
   while(digitalRead(pinNumber)){
+    if(mediNotTakenTimer<=0){
+      return;
+    }
     // Serial.println("not opened");
     delay(300);
+    mediNotTakenTimer--;
   }
   while(!digitalRead(pinNumber)){
     // Serial.println("opened");
@@ -57,7 +62,10 @@ void checkBoxOpenClose(int pinNumber){
     Serial.println("closed again");
   }
 }
-
+void beep(int note, int duration){ // buzzer sound making func
+  tone(buzzerPin, note, duration);
+  delay(duration);
+}
 
 void setup() {
   // Serial port for debugging purposes
@@ -69,10 +77,10 @@ void setup() {
   pinMode(LED_1, OUTPUT);
   pinMode(LED_2, OUTPUT);
   pinMode(LED_3, OUTPUT);
-  pinMode(BTN_0, INPUT_PULLDOWN);
-  pinMode(BTN_1, INPUT_PULLDOWN);
-  pinMode(BTN_2, INPUT_PULLDOWN);
-  pinMode(BTN_3, INPUT_PULLDOWN);
+  pinMode(BTN_0, INPUT);
+  pinMode(BTN_1, INPUT);
+  pinMode(BTN_2, INPUT);
+  pinMode(BTN_3, INPUT);
   pinMode(BUZZER_1, OUTPUT);
 
   // initially leds off state
@@ -135,7 +143,6 @@ void setup() {
   http.begin(String("http://192.168.43.223:3001/api/esp32/activate/")+userId+"/4");
   // http://localhost:3001/api/esp32/activate/t@t.t/4
 
-  
 
   // http.end();
   // fetch end
@@ -144,6 +151,20 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
+  // if any box is open initially then stuck the program and blink the corresponding  led
+  while(!digitalRead(BTN_0) || !digitalRead(BTN_1) || !digitalRead(BTN_2) || !digitalRead(BTN_3)){
+    digitalWrite(LED_0, !digitalRead(BTN_0));
+    digitalWrite(LED_1, !digitalRead(BTN_1));
+    digitalWrite(LED_2, !digitalRead(BTN_2));
+    digitalWrite(LED_3, !digitalRead(BTN_3));
+    delay(500);
+    digitalWrite(LED_0, LOW);
+    digitalWrite(LED_1, LOW);
+    digitalWrite(LED_2, LOW);
+    digitalWrite(LED_3, LOW);
+    delay(500);
+  }
+  
   // fetch start
   Serial.println("Tring to fetch data from API.");
   while (http.GET() != 200) {
@@ -153,6 +174,11 @@ void loop() {
   Serial.println("Data fetched successfully.");
   data = http.getString();
   Serial.println(data);
+
+  // check data != null then start buzzer
+  if(data[0]!='n'){
+    beep(NOTE_A4, 500);
+  }
 
   // check for each index of data var
   if(data[0]=='1'){
@@ -184,7 +210,24 @@ void loop() {
     digitalWrite(LED_3, LOW);
   }
 
+  // if medi not taken in the mentioned time frame then send email
+  if(mediNotTakenTimer<=0){
+    http.end();
+    Serial.println("Sending Email.");
+    http.begin(String("http://192.168.43.223:3001/api/esp32/send/")+userId);
+    while (http.GET() != 200) {
+      Serial.print(".");
+      delay(500);
+    }
+    Serial.println("Email sent.");
+    http.end();
+    http.begin(String("http://192.168.43.223:3001/api/esp32/activate/")+userId+"/4");
+    mediNotTakenTimer=600;
+  } else {
+    // loop repeat after every 60000 milliseconds
+    delay(60000);    
+  }
 
-  // loop repeat after every 60000 milliseconds
-  delay(60000); 
+
+ 
 }
