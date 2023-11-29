@@ -9,7 +9,7 @@
 #include <ESPAsyncWebServer.h>
 #include "html-login-page-var.h"
 #include <HTTPClient.h>
-#include "pitches.h"
+// #include "pitches.h"
 #define NOTE_A4  440
 // #include "core-0.h"
 // #include "core-1.h"
@@ -272,7 +272,7 @@ void Task0code(void* pvParameters) {
     Serial.println("checkpiont4");
       // loop repeat after every 60000 milliseconds
       delay(60000);
-    Serial.println("checkpiont6");
+    // Serial.println("checkpiont6");
     }
   }
 }
@@ -284,8 +284,8 @@ void Task1code(void* pvParameters) {
   Serial.println(xPortGetCoreID());
   while(1){
     while(buzzerStatus==1) {
-      Serial.println("checkpiont7");
-      Serial.println("Task 0 running.");
+      // Serial.println("checkpiont7");
+      // Serial.println("Task 0 running.");
       beep(NOTE_A4, 500);
       // digitalWrite(BUZZER_1, HIGH);
       delay(300);
@@ -297,7 +297,7 @@ void Task1code(void* pvParameters) {
   }
 
     // return;
-    Serial.println("checkpiont5");
+    // Serial.println("checkpiont5");
 }
 
 void loop() {
